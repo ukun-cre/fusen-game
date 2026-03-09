@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ふうせんわりゲーム 〜10をつくろう！〜</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&family=M+PLUS+Rounded+1c:wght@700;900&display=swap');
+
+  :root {
+    --sky1: #87CEEB;
+    --sky2: #B0E0FF;
+    --cloud: #ffffff;
+    --grass: #5DBB63;
+    --sun: #FFD700;
+    --pop-duration: 0.35s;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'M PLUS Rounded 1c', 'Nunito', sans-serif;
+    background: linear-gradient(180deg, #87CEEB 0%, #B8E8FF 60%, #5DBB63 60%, #4aab50 100%);
+    min-height: 100vh;
+    overflow: hidden;
+    user-select: none;
+    position: relative;
+  }
+
+  /* SUN */
+  .sun {
+    position: fixed;
+    top: 18px;
+    right: 30px;
+    width: 70px;
+    height: 70px;
+    background: radial-gradient(circle, #FFE44d, #FFD700);
+    border-radius: 50%;
+    box-shadow: 0 0 0 10px rgba(255,215,0,0.25), 0 0 0 22px rgba(255,215,0,0.1);
+    animation: sunPulse 3s ease-in-out infinite;
+    z-index: 0;
+  }
+  @keyframes sunPulse {
+    0%,100% { box-shadow: 0 0 0 10px rgba(255,215,0,0.25), 0 0 0 22px rgba(255,215,0,0.1); }
+    50% { box-shadow: 0 0 0 16px rgba(255,215,0,0.3), 0 0 0 32px rgba(255,215,0,0.12); }
+  }
+
+  /* CLOUDS */
+  .cloud {
+    position: fixed;
+    background: white;
+    border-radius: 50px;
+    opacity: 0.85;
+    z-index: 0;
+  }
+  .cloud::before, .cloud::after {
+    content: '';
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+  }
+  .cloud-1 { width: 100px; height: 36px; top: 60px; left: -20px; animation: cloudMove 28s linear infinite; }
+  .cloud-1::before { width: 52px; height: 52px; top: -26px; left: 14px; }
+  .cloud-1::after { width: 36px; height: 36px; top: -18px; left: 50px; }
+  .cloud-2 { width: 80px; height: 28px; top: 110px; left: -10px; animation: cloudMove 38s linear infinite 10s; }
+  .cloud-2::before { width: 40px; height: 40px; top: -20px; left: 12px; }
+  .cloud-2::after { width: 28px; height: 28px; top: -14px; left: 44px; }
+  .cloud-3 { width: 120px; height: 42px; top: 40px; left: -30px; animation: cloudMove 22s linear infinite 5s; }
+  .cloud-3::before { width: 60px; height: 60px; top: -30px; left: 18px; }
+  .cloud-3::after { width: 44px; height: 44px; top: -22px; left: 64px; }
+  @keyframes cloudMove {
+    from { transform: translateX(-200px); }
+    to { transform: translateX(110vw); }
+  }
+
+  /* HUD */
+  #hud {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 18px;
+    z-index: 100;
+    pointer-events: none;
+  }
+  .hud-box {
+    background: rgba(255,255,255,0.88);
+    border-radius: 20px;
+    padding: 8px 18px;
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: #333;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+    pointer-events: auto;
+  }
+  #score-box { color: #e05d00; font-size: 1.3rem; }
+  #timer-box { color: #1a7abf; font-size: 1.3rem; }
+  #timer-box.danger { color: #e02020; animation: timerDanger 0.5s ease-in-out infinite alternate; }
+  @keyframes timerDanger { from { transform: scale(1); } to { transform: scale(1.15); } }
+
+  /* QUESTION BANNER */
+  #question-area {
+    position: fixed;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    text-align: center;
+    pointer-events: none;
+  }
+  #question-box {
+    background: rgba(255,255,255,0.95);
+    border-radius: 30px;
+    padding: 10px 30px;
+    font-size: 2rem;
+    font-weight: 900;
+    color: #222;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  #question-box .num-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    font-size: 2rem;
+    font-weight: 900;
+    color: white;
+    background: linear-gradient(135deg, #f77, #e02020);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+  }
+  #question-box .plus { color: #555; font-size: 1.6rem; }
+  #question-box .qmark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    font-size: 2rem;
+    font-weight: 900;
+    color: white;
+    background: linear-gradient(135deg, #aaa, #666);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+    animation: qmarkBounce 1s ease-in-out infinite;
+  }
+  #question-box .eq { color: #555; font-size: 1.6rem; }
+  #question-box .ten {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 64px; height: 56px;
+    border-radius: 28px;
+    padding: 0 12px;
+    font-size: 2rem;
+    font-weight: 900;
+    color: white;
+    background: linear-gradient(135deg, #4dc, #0a9);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+  }
+  @keyframes qmarkBounce {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  #hint-text {
+    margin-top: 6px;
+    font-size: 1rem;
+    color: #444;
+    font-weight: 700;
+    text-shadow: 0 1px 3px rgba(255,255,255,0.8);
+  }
+
+  /* GAME AREA */
+  #game-area {
+    position: fixed;
+    top: 160px;
+    left: 0; right: 0;
+    bottom: 60px;
+    overflow: hidden;
+  }
+
+  /* BALLOONS */
+  .balloon-wrap {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    animation: floatUp linear forwards;
+    z-index: 10;
+  }
+  .balloon-wrap:hover .balloon-body { transform: scale(1.08); filter: brightness(1.1); }
+  .balloon-body {
+    width: 72px;
+    height: 88px;
+    border-radius: 50% 50% 50% 50% / 55% 55% 45% 45%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 900;
+    color: white;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    position: relative;
+    transition: transform 0.1s ease, filter 0.1s;
+    box-shadow: inset -10px -8px 0 rgba(0,0,0,0.12), 0 4px 14px rgba(0,0,0,0.18);
+  }
+  .balloon-body::after {
+    content: '';
+    position: absolute;
+    top: 12px; left: 16px;
+    width: 18px; height: 10px;
+    background: rgba(255,255,255,0.35);
+    border-radius: 50%;
+    transform: rotate(-30deg);
+  }
+  .balloon-knot {
+    width: 10px; height: 12px;
+    background: inherit;
+    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+    margin-top: -2px;
+  }
+  .balloon-string {
+    width: 1.5px;
+    height: 55px;
+    background: rgba(0,0,0,0.2);
+    margin-top: 0;
+  }
+
+  @keyframes floatUp {
+    from { transform: translateY(0) rotate(var(--tilt, 0deg)); }
+    to   { transform: translateY(calc(-100vh - 200px)) rotate(calc(var(--tilt, 0deg) * -1)); }
+  }
+
+  /* POP ANIMATION */
+  .balloon-wrap.popping {
+    animation: none !important;
+    pointer-events: none;
+  }
+  .balloon-wrap.popping .balloon-body {
+    animation: popBurst var(--pop-duration) ease-out forwards;
+  }
+  .balloon-wrap.popping .balloon-knot,
+  .balloon-wrap.popping .balloon-string {
+    opacity: 0;
+    transition: opacity 0.1s;
+  }
+  @keyframes popBurst {
+    0%   { transform: scale(1); opacity: 1; }
+    30%  { transform: scale(1.5); opacity: 1; }
+    60%  { transform: scale(0.5); opacity: 0.5; }
+    100% { transform: scale(0); opacity: 0; }
+  }
+
+  /* POP PARTICLES */
+  .particle {
+    position: absolute;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: particleFly 0.5s ease-out forwards;
+    z-index: 200;
+  }
+  @keyframes particleFly {
+    from { transform: translate(0,0) scale(1); opacity: 1; }
+    to   { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+  }
+
+  /* WRONG SHAKE */
+  .balloon-wrap.wrong .balloon-body {
+    animation: wrongShake 0.4s ease-out;
+  }
+  @keyframes wrongShake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-8px) rotate(-5deg); }
+    40% { transform: translateX(8px) rotate(5deg); }
+    60% { transform: translateX(-5px) rotate(-3deg); }
+    80% { transform: translateX(5px) rotate(3deg); }
+  }
+
+  /* FEEDBACK TOAST */
+  .toast {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 2.8rem;
+    font-weight: 900;
+    z-index: 300;
+    pointer-events: none;
+    text-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    animation: toastAnim 0.9s ease-out forwards;
+  }
+  @keyframes toastAnim {
+    0%   { opacity: 0; transform: translateX(-50%) translateY(0) scale(0.5); }
+    25%  { opacity: 1; transform: translateX(-50%) translateY(-20px) scale(1.1); }
+    60%  { opacity: 1; transform: translateX(-50%) translateY(-40px) scale(1); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-80px) scale(0.8); }
+  }
+  .toast.correct { color: #f60; }
+  .toast.wrong   { color: #e02020; }
+
+  /* SCREENS */
+  #screen-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(100,200,255,0.25);
+    backdrop-filter: blur(6px);
+  }
+  .screen-card {
+    background: white;
+    border-radius: 36px;
+    padding: 40px 50px;
+    text-align: center;
+    box-shadow: 0 10px 50px rgba(0,0,0,0.18);
+    max-width: 380px;
+    width: 90%;
+    animation: cardPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes cardPop {
+    from { transform: scale(0.5); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+  .screen-emoji { font-size: 4rem; margin-bottom: 10px; }
+  .screen-title { font-size: 2rem; font-weight: 900; color: #222; margin-bottom: 8px; }
+  .screen-sub { font-size: 1.1rem; color: #666; font-weight: 700; margin-bottom: 24px; }
+  .screen-score-big { font-size: 3rem; font-weight: 900; color: #e05d00; margin: 10px 0 20px; }
+
+  .btn-start {
+    background: linear-gradient(135deg, #ff7e3e, #e02060);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 16px 48px;
+    font-size: 1.6rem;
+    font-weight: 900;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(224,32,96,0.4);
+    transition: transform 0.1s, box-shadow 0.1s;
+    display: block;
+    width: 100%;
+  }
+  .btn-start:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(224,32,96,0.45); }
+  .btn-start:active { transform: translateY(0); }
+
+  /* GRASS DECORATION */
+  #grass-row {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 60px;
+    background: linear-gradient(180deg, #5DBB63 0%, #3a9e40 100%);
+    display: flex;
+    align-items: flex-start;
+    overflow: hidden;
+    z-index: 5;
+  }
+  .grass-tuft {
+    flex-shrink: 0;
+    font-size: 2.2rem;
+    margin-top: -6px;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.1));
+  }
+
+  /* COMBO INDICATOR */
+  #combo-display {
+    position: fixed;
+    top: 70px;
+    right: 18px;
+    font-size: 1rem;
+    font-weight: 900;
+    color: #ff6600;
+    z-index: 60;
+    pointer-events: none;
+    text-shadow: 0 2px 6px rgba(255,255,255,0.8);
+    transition: opacity 0.3s;
+  }
+</style>
+</head>
+<body>
+
+<div class="sun"></div>
+<div class="cloud cloud-1"></div>
+<div class="cloud cloud-2"></div>
+<div class="cloud cloud-3"></div>
+
+<div id="hud">
+  <div class="hud-box" id="score-box">⭐ <span id="score-val">0</span></div>
+  <div class="hud-box" id="timer-box">⏱ <span id="timer-val">60</span></div>
+</div>
+
+<div id="question-area">
+  <div id="question-box">
+    <span class="num-badge" id="q-num">?</span>
+    <span class="plus">＋</span>
+    <span class="qmark" id="q-blank">？</span>
+    <span class="eq">＝</span>
+    <span class="ten">10</span>
+  </div>
+  <div id="hint-text">こたえの ふうせんを わろう！</div>
+</div>
+
+<div id="game-area"></div>
+
+<div id="combo-display" style="opacity:0"></div>
+
+<div id="grass-row"></div>
+
+<div id="screen-overlay">
+  <div class="screen-card" id="start-card">
+    <div class="screen-emoji">🎈</div>
+    <div class="screen-title">ふうせんわりゲーム</div>
+    <div class="screen-sub">10になる ふうせんを<br>さがして わろう！</div>
+    <button class="btn-start" id="btn-start">はじめる！</button>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────
+//  GAME STATE
+// ─────────────────────────────
+const BALLOON_COLORS = [
+  ['#ff4d4d','#cc1111'],
+  ['#ff7a00','#cc5500'],
+  ['#ffc800','#cc9900'],
+  ['#44cc44','#228822'],
+  ['#2299ff','#005acc'],
+  ['#cc44ff','#8800cc'],
+  ['#ff44aa','#cc0077'],
+  ['#00ccbb','#008877'],
+];
+
+let score = 0;
+let combo = 0;
+let timeLeft = 60;
+let timerInterval = null;
+let currentQuestion = null; // { given: N, answer: 10-N }
+let balloons = [];           // { el, num, id }
+let balloonId = 0;
+let spawnInterval = null;
+let gameRunning = false;
+
+// ─────────────────────────────
+//  DOM refs
+// ─────────────────────────────
+const gameArea    = document.getElementById('game-area');
+const scoreVal    = document.getElementById('score-val');
+const timerVal    = document.getElementById('timer-val');
+const timerBox    = document.getElementById('timer-box');
+const qNum        = document.getElementById('q-num');
+const qBlank      = document.getElementById('q-blank');
+const screenOver  = document.getElementById('screen-overlay');
+const comboDisp   = document.getElementById('combo-display');
+
+// ─────────────────────────────
+//  GRASS DECORATION
+// ─────────────────────────────
+(function buildGrass() {
+  const row = document.getElementById('grass-row');
+  const tufts = ['🌿','🌱','🌿','🍀','🌱','🌿','🍀','🌱'];
+  for (let i = 0; i < 30; i++) {
+    const d = document.createElement('span');
+    d.className = 'grass-tuft';
+    d.textContent = tufts[i % tufts.length];
+    row.appendChild(d);
+  }
+})();
+
+// ─────────────────────────────
+//  NEW QUESTION
+// ─────────────────────────────
+function newQuestion() {
+  const given = Math.floor(Math.random() * 9) + 1; // 1-9
+  currentQuestion = { given, answer: 10 - given };
+  qNum.textContent = given;
+  qBlank.textContent = '？';
+  qBlank.style.background = 'linear-gradient(135deg, #aaa, #666)';
+}
+
+// ─────────────────────────────
+//  SPAWN BALLOON
+// ─────────────────────────────
+function spawnBalloon() {
+  if (!gameRunning) return;
+
+  // Decide number: 50% chance correct answer, else random wrong
+  const isCorrect = Math.random() < 0.45;
+  let num;
+  if (isCorrect) {
+    num = currentQuestion.answer;
+  } else {
+    // Pick a wrong number (1-9, not the answer)
+    const pool = [1,2,3,4,5,6,7,8,9].filter(n => n !== currentQuestion.answer);
+    num = pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  const color = BALLOON_COLORS[Math.floor(Math.random() * BALLOON_COLORS.length)];
+  const tilt  = (Math.random() * 12 - 6).toFixed(1);
+  const duration = (7 + Math.random() * 5).toFixed(1); // 7-12s
+  const startX = (Math.random() * 80 + 5); // 5%-85% of screen
+
+  const wrap = document.createElement('div');
+  wrap.className = 'balloon-wrap';
+  wrap.style.left = startX + '%';
+  wrap.style.bottom = '-180px';
+  wrap.style.setProperty('--tilt', tilt + 'deg');
+  wrap.style.animationDuration = duration + 's';
+
+  const body = document.createElement('div');
+  body.className = 'balloon-body';
+  body.style.background = `linear-gradient(135deg, ${color[0]}, ${color[1]})`;
+  body.textContent = num;
+
+  const knot = document.createElement('div');
+  knot.className = 'balloon-knot';
+  knot.style.background = color[1];
+
+  const string = document.createElement('div');
+  string.className = 'balloon-string';
+
+  wrap.appendChild(body);
+  wrap.appendChild(knot);
+  wrap.appendChild(string);
+  gameArea.appendChild(wrap);
+
+  const id = balloonId++;
+  balloons.push({ el: wrap, num, id });
+
+  wrap.addEventListener('click', () => onBalloonClick(id, num, wrap));
+  wrap.addEventListener('touchstart', (e) => { e.preventDefault(); onBalloonClick(id, num, wrap); }, { passive: false });
+
+  // Auto-remove when floated off screen
+  wrap.addEventListener('animationend', () => {
+    removeBalloon(id);
+    wrap.remove();
+  });
+}
+
+// ─────────────────────────────
+//  BALLOON CLICK
+// ─────────────────────────────
+function onBalloonClick(id, num, wrap) {
+  if (!gameRunning) return;
+  if (!balloons.find(b => b.id === id)) return; // already removed
+
+  if (num === currentQuestion.answer) {
+    // ✅ CORRECT
+    popBalloon(wrap, num);
+    removeBalloon(id);
+
+    combo++;
+    score += combo > 1 ? combo * 10 : 10;
+    scoreVal.textContent = score;
+
+    showCombo(combo);
+    showToast(combo > 2 ? '🎉 すごい！' : '⭕ やったー！', 'correct', wrap);
+
+    // Flash question badge green briefly
+    qBlank.textContent = num;
+    qBlank.style.background = 'linear-gradient(135deg, #4dc, #0a9)';
+
+    setTimeout(() => newQuestion(), 600);
+  } else {
+    // ❌ WRONG
+    combo = 0;
+    comboDisp.style.opacity = '0';
+    wrap.classList.add('wrong');
+    setTimeout(() => wrap.classList.remove('wrong'), 400);
+    showToast('❌ ちがうよ！', 'wrong', wrap);
+  }
+}
+
+function removeBalloon(id) {
+  const idx = balloons.findIndex(b => b.id === id);
+  if (idx !== -1) balloons.splice(idx, 1);
+}
+
+// ─────────────────────────────
+//  POP EFFECT
+// ─────────────────────────────
+function popBalloon(wrap, num) {
+  wrap.classList.add('popping');
+  const rect = wrap.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + 50;
+
+  for (let i = 0; i < 10; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const angle = (i / 10) * Math.PI * 2;
+    const dist  = 50 + Math.random() * 50;
+    p.style.left = cx + 'px';
+    p.style.top  = cy + 'px';
+    p.style.background = `hsl(${Math.random()*360},90%,60%)`;
+    p.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+    p.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 550);
+  }
+
+  setTimeout(() => wrap.remove(), 400);
+}
+
+// ─────────────────────────────
+//  TOAST
+// ─────────────────────────────
+function showToast(msg, cls, wrap) {
+  const rect = wrap.getBoundingClientRect();
+  const t = document.createElement('div');
+  t.className = `toast ${cls}`;
+  t.style.top = (rect.top + 20) + 'px';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 950);
+}
+
+// ─────────────────────────────
+//  COMBO DISPLAY
+// ─────────────────────────────
+function showCombo(c) {
+  if (c < 2) { comboDisp.style.opacity = '0'; return; }
+  comboDisp.textContent = `🔥 ${c} コンボ！`;
+  comboDisp.style.opacity = '1';
+  comboDisp.style.fontSize = Math.min(1 + c * 0.15, 2.2) + 'rem';
+}
+
+// ─────────────────────────────
+//  TIMER
+// ─────────────────────────────
+function startTimer() {
+  timeLeft = 60;
+  timerVal.textContent = timeLeft;
+  timerBox.classList.remove('danger');
+
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    timerVal.textContent = timeLeft;
+    if (timeLeft <= 10) timerBox.classList.add('danger');
+    if (timeLeft <= 0) endGame();
+  }, 1000);
+}
+
+// ─────────────────────────────
+//  START GAME
+// ─────────────────────────────
+function startGame() {
+  screenOver.style.display = 'none';
+  score = 0; combo = 0;
+  scoreVal.textContent = '0';
+  comboDisp.style.opacity = '0';
+  gameRunning = true;
+  balloons = [];
+  gameArea.innerHTML = '';
+  newQuestion();
+  startTimer();
+
+  // Spawn rate: every 1.8s
+  spawnInterval = setInterval(spawnBalloon, 1800);
+  // Immediate first balloon
+  spawnBalloon();
+}
+
+// ─────────────────────────────
+//  END GAME
+// ─────────────────────────────
+function endGame() {
+  gameRunning = false;
+  clearInterval(timerInterval);
+  clearInterval(spawnInterval);
+
+  const emoji = score >= 150 ? '🏆' : score >= 80 ? '🎊' : '😊';
+  const msg   = score >= 150 ? 'さいこう！！' : score >= 80 ? 'すごいね！' : 'よくがんばった！';
+
+  screenOver.innerHTML = `
+    <div class="screen-card">
+      <div class="screen-emoji">${emoji}</div>
+      <div class="screen-title">ゲームおわり！</div>
+      <div class="screen-sub">${msg}</div>
+      <div class="screen-score-big">⭐ ${score} てん</div>
+      <button class="btn-start" id="btn-retry">もういちど！</button>
+    </div>
+  `;
+  screenOver.style.display = 'flex';
+  document.getElementById('btn-retry').addEventListener('click', startGame);
+}
+
+// ─────────────────────────────
+//  INIT
+// ─────────────────────────────
+document.getElementById('btn-start').addEventListener('click', startGame);
+</script>
+</body>
+</html>
